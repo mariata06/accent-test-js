@@ -102,11 +102,11 @@ if(document.querySelector('.product-list')) {
         productList.innerHTML = '';
         
         for (const product of products_array) {
-            const productCard = document.querySelector('.product-card');
-            const productImg = productCard.content.querySelector('.product-img');
-            const productTitle = productCard.content.querySelector('.product-title');
-            const productPrice = productCard.content.querySelector('.product-price');
-            const productBrand = productCard.content.querySelector('.product-brand');
+            const productTemplate = document.querySelector('.product-template');
+            const productImg = productTemplate.content.querySelector('.product-img');
+            const productTitle = productTemplate.content.querySelector('.product-title');
+            const productPrice = productTemplate.content.querySelector('.product-price');
+            const productBrand = productTemplate.content.querySelector('.product-brand');
 
             productImg.src = product.image;
             productImg.alt = product.title;
@@ -115,18 +115,15 @@ if(document.querySelector('.product-list')) {
             productPrice.textContent = '$' + product.regular_price.value;
             productBrand.textContent = 'Brand ' + product.brand;
 
-            const newCard = productCard.content.cloneNode(true);
+            const newCard = productTemplate.content.cloneNode(true);
 
-            //Навешивание eventListener на кнопку купить каждой карточки
-            const buyButton = newCard.querySelector('.add-btn');
-            console.log(buyButton)
-            buyButton.addEventListener('click', (e) => {
+            // //Навешивание eventListener на кнопку купить каждой карточки
+            const buyBtn = newCard.querySelector('.add-btn');
+            buyBtn.addEventListener('click', (e) => {
                 let imgPath = e.target.parentNode.querySelector('.product-img').src;
                 let imgPathArr = imgPath.split('/')
                 let imgPathArrLength = imgPathArr.length
-
                 let price =  e.target.parentNode.querySelector('.product-price').textContent;
-                // console.log(price.split('$')[1])
 
                 let cartItem = {
                     "id": e.target.parentNode.querySelector('.product-img').id,
@@ -170,41 +167,42 @@ if(document.querySelector('.product-list')) {
 }
 
 //Activate Cart
-// const addBtns = document.querySelectorAll('.add-btn');
-
 let cart;
-let cartTotalAmount; //кол-во
+let cartTotalAmount;     //количество товаров в корзине
+let cartTotalSum;        //общая стоимость корзины
 let uniqueCartItemsIds;
 
 //Сохранение кол-ва и набранной корзины в LocalStorage
 
 //Обновление корзины после удаления товара
-if (!localStorage["items"]) {
-    //создание пустого LocalStorage если его нет
-    localStorage.setItem('items', []);
-    localStorage.setItem("uniqueIdsInCart", []);
-    uniqueCartItemsIds = [];
-    cart = [];
-}   else {
-    //восстановление переменных из LocalStorage
-    cart = JSON.parse(localStorage["items"]);
-    cartTotalAmount = countTotalAmount();
-    uniqueCartItemsIds = JSON.parse(localStorage["uniqueIdsInCart"]);
+function updateFromLocalStorage() {
+    if (!localStorage["items"]) {
+        //создание пустого LocalStorage если его нет
+        localStorage.setItem('items', []);
+        localStorage.setItem("uniqueIdsInCart", []);
+        uniqueCartItemsIds = [];
+        cart = [];
+    }   else {
+        //восстановление переменных из LocalStorage
+        cart = JSON.parse(localStorage["items"]);
+        // cartTotalAmount = cartTotal()[0]; //////////?? обратить внимание
+        uniqueCartItemsIds = JSON.parse(localStorage["uniqueIdsInCart"]);
+    }
 }
 
+updateFromLocalStorage();
 
-function countTotalAmount() {
+//////////////////////////////Итого По Корзине///////////////////////////
+function cartTotal() {
     cartTotalAmount = 0;
+    cartTotalSum = 0;
     cart.map((item) => {
         cartTotalAmount = cartTotalAmount + item.amount;
+        cartTotalSum = cartTotalSum + (item.amount * item.regular_price);
     })
-
     let iconCart = document.querySelector('.cart-totals');
     iconCart.innerHTML = cartTotalAmount;
 }
-
-let rez = countTotalAmount();
-console.log(rez);
 
 function addToCart(addedProduct) {
     // увеличение количества если такой товар уже есть в корзине
@@ -221,30 +219,14 @@ function addToCart(addedProduct) {
         uniqueCartItemsIds.push(addedProduct.id);
     }
 
-    countTotalAmount();
+    cartTotal();
 
     localStorage["items"] = JSON.stringify(cart);
     localStorage["uniqueIdsInCart"] = JSON.stringify(uniqueCartItemsIds);
     let items = JSON.parse(localStorage["items"]); 
-    console.log(items);
 }
 
-function clearCart() {
-    cart = [];
-    localStorage.clear();
-    countTotalAmount();
-    cartTotalSum = 0;
-    removeCartItemView();
-}
-
-let clearCartBtn = document.querySelector('.clearcart-btn');
-    if(clearCartBtn) {
-        clearCartBtn.addEventListener('click', () => {
-        clearCart();
-    })
-}
-
-///////////////////Cart page
+///////////////////Cart page//////////////////////////////////////////
 // let cartTotalSum = 0;    //суммарная стоимость всех
 
 //проверка наличия товаров в localStorage и что мы на странице корзины
@@ -254,7 +236,6 @@ if (localStorage["items"] && document.querySelector('.cart-page')) {
     let items = JSON.parse(localStorage["items"]);
 
     function renderCartItem() {
-        let cartTotalSum = 0;
         for (let i = 0; i < items.length; i++) {
             const newItem = document.createElement('div');
             newItem.classList.add('cart-item');
@@ -271,40 +252,101 @@ if (localStorage["items"] && document.querySelector('.cart-page')) {
                 </div>
                 <div class="cart-item__btns">
                     <button class="decrease-btn" type="button">-</button>
-                    <span>${items[i].amount}</span>
+                    <span class="cart-item__amount">${items[i].amount}</span>
                     <button class="increase-btn" type="button">+</button>
                     <button class="delete-btn" type="button">x</button>
                 </div>
                 <div class="cart-item__total">
+                    
                     <span>$${itemTotalSum.toFixed(2)}</span>
                 </div>  
             `
             newItem.innerHTML = cartItemLayout;
             cartContainer.appendChild(newItem);
-            cartTotalSum = cartTotalSum + itemTotalSum;
-            console.log(cartTotalSum);
         }
-        let cartSum = document.querySelector('.cart-products__sum');
-        cartSum.innerHTML = `Total sum: $${cartTotalSum.toFixed(2)}`
+        cartTotal()
+        outputCartTotal(cartTotalAmount, cartTotalSum);
     }
 
     renderCartItem();
 
-    let cartItemsAmount = document.querySelector('.cart-products__amount');
-    cartItemsAmount.innerHTML = `Your order is: ${cartTotalAmount} items`;
+    function changeCartItemAmount(cart) {
+        let cartItems = document.querySelectorAll('.cart-item');
+        cartItems.forEach((item) => {
+            let increaseBtn = item.querySelector('.increase-btn');
+            let decreaseBtn = item.querySelector('.decrease-btn');
+            let itemTitle = item.querySelector('.cart-item__title span').textContent;
+            increaseBtn.addEventListener('click', (e) => {
+                for (var i = 0 ; i < cart.length; i++) {
+                    if (itemTitle === cart[i].title) {
+                        cart[i].amount = cart[i].amount + 1;
+                        e.target.parentNode.querySelector("span").textContent = cart[i].amount;
+                        e.target.parentNode.parentNode.querySelector(".cart-item__total span").textContent = '$'+cart[i].amount * cart[i].regular_price;
+
+                        let tempArr = JSON.parse(localStorage['items']);
+                        tempArr.map((item) => {
+                            if (item.id.toString() === cart[i].id.toString()) {
+                                item.amount = cart[i].amount;
+                            }
+                        })
+                        localStorage["items"] = JSON.stringify(tempArr);
+                    }
+                }
+
+                updateFromLocalStorage(); //а тут из локал стор обновляем cart
+                cartTotal(); // оно работает с переменной корзины (cart)
+                outputCartTotal(cartTotalAmount, cartTotalSum); //отображение в верстке
+
+            })
+            decreaseBtn.addEventListener('click', (e) => {
+                for (var i = 0 ; i < cart.length; i++) {
+                    if (itemTitle === cart[i].title) {
+                        e.target.parentNode.querySelector("span").textContent = cart[i].amount;
+                        e.target.parentNode.parentNode.querySelector(".cart-item__total span").textContent = '$'+cart[i].amount * cart[i].regular_price;
+                        
+                        if (cart[i].amount === 1) {
+                            removeCartItemView(e.target.parentNode.parentNode);
+                            console.log(e.target.parentNode.parentNode);
+
+                        } else {
+                            cart[i].amount = cart[i].amount - 1;
+
+                            let tempArr = JSON.parse(localStorage['items']);
+                            tempArr.map((item) => {
+                                if (item.id.toString() === cart[i].id.toString()) {
+                                    item.amount = cart[i].amount;
+                                }
+                            })
+                            localStorage["items"] = JSON.stringify(tempArr);
+                        }     
+                    }
+                }
+                
+                updateFromLocalStorage(); //а тут из локал стор обновляем cart
+                cartTotal(); // оно работает с переменной корзины (cart)
+                outputCartTotal(cartTotalAmount, cartTotalSum); //отображение в верстке
+            })
+        })
+    } 
+
+    changeCartItemAmount(items);
 
     let cartItems = document.querySelectorAll('.cart-item');
     cartItems.forEach((item) => {
         let removeItemBtn = item.querySelector('.delete-btn');
+        let removedItem;
         removeItemBtn.addEventListener('click', (e) => {
             removeCartItemView(e.target.parentNode.parentNode);
-            let removedItem = e.target.parentNode.parentNode;
+            removedItem = e.target.parentNode.parentNode;
             let removedItemTitle = removedItem.querySelector('.cart-item__title span').textContent;
             removeCartItemData(removedItemTitle);
-            countTotalAmount();
+            cartTotal();
+
+            outputCartTotal(cartTotalAmount, cartTotalSum);
         });
     })
 
+    //удаляет товар из корзины из localStorage  
     function removeCartItemData(title) {
         // нахожу id удаленного товара по СТАРОЙ(!) корзине
         let removedItemId;
@@ -328,4 +370,28 @@ if (localStorage["items"] && document.querySelector('.cart-page')) {
     function removeCartItemView(item) {
         cartContainer.removeChild(item);
     }
+
+    //очистка корзины, удаление количества в киокнке корзины, удаление товаров из разметки 
+    function clearCart() {
+        cart = [];
+        localStorage.clear();
+        cartTotal();
+        cartContainer.innerHTML = '';
+        outputCartTotal(cartTotalAmount, cartTotalSum); // или лучше в кнопку clearCartBtn ??
+    }
+
+    let clearCartBtn = document.querySelector('.clearcart-btn');
+        if(clearCartBtn) {
+            clearCartBtn.addEventListener('click', () => {
+            clearCart();
+        })
+    }
+
+    //выводит итог Корзины
+    function outputCartTotal(amount, sum) {
+        let cartItemsAmount = document.querySelector('.cart-products__amount');
+        cartItemsAmount.innerHTML = `Your order is: ${amount} items`;
+        let cartSum = document.querySelector('.cart-products__sum');
+        cartSum.innerHTML = `Total sum: $${sum.toFixed(2)}`;
+    } 
 }

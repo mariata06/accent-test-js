@@ -448,6 +448,11 @@ article .amount-btns {
   padding: 10px 20px;
   border-radius: 5px;
   background-color: aliceblue;
+  transition: opacity 0.3s ease-out;
+}
+
+.cart-item button:hover {
+  opacity: 0.7;
 }
 
 .cart-item__title {
