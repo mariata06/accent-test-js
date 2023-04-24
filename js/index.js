@@ -2,6 +2,7 @@ import data from '../products.json' assert { type: "json" };
 
 //Для страницы Товаров
 if(document.querySelector('.product-list')) {
+    
     //Activate Filter
     function renderFilter(brands_array) {
         const brandList = document.querySelector('.brand-list');
@@ -174,6 +175,7 @@ let uniqueCartItemsIds;
 
 //Сохранение кол-ва и набранной корзины в LocalStorage
 
+
 //Обновление корзины после удаления товара
 function updateFromLocalStorage() {
     if (!localStorage["items"]) {
@@ -182,16 +184,17 @@ function updateFromLocalStorage() {
         localStorage.setItem("uniqueIdsInCart", []);
         uniqueCartItemsIds = [];
         cart = [];
-    }   else {
+    } else {
         //восстановление переменных из LocalStorage
         cart = JSON.parse(localStorage["items"]);
-        // cartTotalAmount = cartTotal()[0]; //////////?? обратить внимание
+        // console.log(cart)
+        cartTotal(); // обновление кол-ва в иконке корзины
         uniqueCartItemsIds = JSON.parse(localStorage["uniqueIdsInCart"]);
     }
 }
 
 updateFromLocalStorage();
-
+// console.log(cartTotalAmount);
 //////////////////////////////Итого По Корзине///////////////////////////
 function cartTotal() {
     cartTotalAmount = 0;
@@ -301,16 +304,17 @@ if (localStorage["items"] && document.querySelector('.cart-page')) {
             decreaseBtn.addEventListener('click', (e) => {
                 for (var i = 0 ; i < cart.length; i++) {
                     if (itemTitle === cart[i].title) {
-                        e.target.parentNode.querySelector("span").textContent = cart[i].amount;
-                        e.target.parentNode.parentNode.querySelector(".cart-item__total span").textContent = '$'+cart[i].amount * cart[i].regular_price;
-                        
                         if (cart[i].amount === 1) {
                             removeCartItemView(e.target.parentNode.parentNode);
-                            console.log(e.target.parentNode.parentNode);
+                            let removedItem = e.target.parentNode.parentNode;
+                            let removedItemTitle = removedItem.querySelector('.cart-item__title span').textContent;
+                            removeCartItemData(removedItemTitle);
 
                         } else {
                             cart[i].amount = cart[i].amount - 1;
-
+                            e.target.parentNode.querySelector("span").textContent = cart[i].amount;
+                            e.target.parentNode.parentNode.querySelector(".cart-item__total span").textContent = '$'+cart[i].amount * cart[i].regular_price;
+                        
                             let tempArr = JSON.parse(localStorage['items']);
                             tempArr.map((item) => {
                                 if (item.id.toString() === cart[i].id.toString()) {
@@ -318,6 +322,7 @@ if (localStorage["items"] && document.querySelector('.cart-page')) {
                                 }
                             })
                             localStorage["items"] = JSON.stringify(tempArr);
+                            // console.log()
                         }     
                     }
                 }
